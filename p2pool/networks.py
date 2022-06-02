@@ -10,21 +10,22 @@ from p2pool.util import math
 nets = dict(
     infinitecoin=math.Object(
         PARENT=networks.nets['infinitecoin'],
-        SHARE_PERIOD=10, # seconds
+        SHARE_PERIOD=15, # seconds
         CHAIN_LENGTH=24*60*60//10, # shares
         REAL_CHAIN_LENGTH=24*60*60//10, # shares
-        TARGET_LOOKBEHIND=100, # shares
-        SPREAD=60, # blocks
+        TARGET_LOOKBEHIND=200, # shares
+        SPREAD=3, # blocks
         IDENTIFIER = '1137d5ffc69234ff'.decode('hex'),
         PREFIX = '1237d5ffc69234ff'.decode('hex'),
         P2P_PORT=9392,
         MIN_TARGET=0,
         MAX_TARGET=2**256//2**20 - 1,
-        PERSIST=False,
+        PERSIST=True,
         WORKER_PORT=9391,
-        BOOTSTRAP_ADDRS=['8.209.112.218','220.179.77.92'],
+        BOOTSTRAP_ADDRS='8.209.112.218 220.179.77.92 '.split(' '),
         ANNOUNCE_CHANNEL='#p2pool-ifc',
         VERSION_CHECK=lambda v: True,
+		VERSION_WARNING=lambda v: 'Upgrade Infinitecoin to >=0.8.7.6!' if v < 80500 else None,
     ),
     
     bitcoin=math.Object(
