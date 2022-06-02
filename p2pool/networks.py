@@ -22,7 +22,7 @@ nets = dict(
         MAX_TARGET=2**256//2**20 - 1,
         PERSIST=False,
         WORKER_PORT=9391,
-        BOOTSTRAP_ADDRS='8.209.112.218 220.179.77.92 '.split(' '),
+        BOOTSTRAP_ADDRS='amxpool.com ifcf2pool.com '.split(' '),
         ANNOUNCE_CHANNEL='#p2pool-ifc',
         VERSION_CHECK=lambda v: True,
 	VERSION_WARNING=lambda v: 'Upgrade Infinitecoin to >=0.8.7.6!' if v < 80500 else None,
