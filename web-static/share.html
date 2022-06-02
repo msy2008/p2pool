@@ -1,96 +1,209 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
-    <head>
-        <title>P2Pool Share</title>
-        <link rel="shortcut icon" type="image/x-icon" href="favicon.ico" />
-        <script type="text/javascript" src="d3.v2.min.js"></script>
-    </head>
-    <body>
-        <p>Loading...</p>
-        <script type="text/javascript">
-            function hex2a(hex) {
-                var str = '';
-                for (var i = 0; i < hex.length; i += 2) {
-                    var code = parseInt(hex.substr(i, 2), 16);
-                    str += code >= 32 && code <= 126 ? String.fromCharCode(code) : '?';
-                }
-                return str;
+<head>
+    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+    <title>P2Pool - Shares</title>
+    <link rel="shortcut icon" type="image/x-icon" href="favicon.ico" />
+    <script type="text/javascript" src="js/d3.v2.min.js"></script>
+    <link href="css/bootstrap.css" rel="stylesheet">
+    <link href="css/jquery.jqplot.min.css" rel="stylesheet">
+    <script src="js/jquery.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="js/jquery.jqplot.min.js"></script>
+    <script type="text/javascript" src="js/jqplot.pieRenderer.min.js"></script>
+    <style>
+        body {
+            padding-top: 60px;
+        }
+
+        line {
+            stroke: black;
+            stroke-width: 1;
+            shape-rendering: crispEdges;
+        }
+
+        .plotline {
+            stroke-width: 1.4;
+            fill: none;
+        }
+
+        text {
+            font-family: Sans-serif;
+            font-size: 12px;
+        }
+
+        #share-box {
+            text-align: left;
+        }
+
+        #share-box h1 {
+            text-align: center;
+        }
+    </style>
+    <link href="css/bootstrap-responsive.css" rel="stylesheet">
+</head>
+
+<body>
+    <div class="navbar navbar-inverse navbar-fixed-top">
+        <div class="navbar-inner">
+            <div class="container">
+                <button type="button" class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="brand" href="/">P2Pool pool (<span class="symbol upper"></span>)</a>
+                <div class="nav-collapse collapse">
+                    <ul class="nav">
+                        <li><a href="index.html">Stats</a></li>
+                        <li><a href="graphs.html">Graphs</a></li>
+                        <li class="active"><a href="share.html">Shares</a></li>
+                        <li><a href="https://github.com/veqtrus/P2PoolExtendedFrontEnd">Contact</a></li>
+                    </ul>
+                </div>
+                <!--/.nav-collapse -->
+            </div>
+        </div>
+    </div>
+
+    <center>
+		<div id="share-box" class="well" style="width:1000px"> 
+			<p>Loading...</p>
+		</div>
+	</center>
+
+    <script type="text/javascript">
+        function hex2a(hex) {
+            var str = '';
+            for (var i = 0; i < hex.length; i += 2) {
+                var code = parseInt(hex.substr(i, 2), 16);
+                str += code >= 32 && code <= 126 ? String.fromCharCode(code) : '?';
             }
-            
-            function target_to_difficulty(target) { return (0xffff0000 * Math.pow(2, 256-64) + 1)/(target + 1); }
-            
-            var current_hash = null;
-            function reload(currency_info) {
-                var share_hash = document.location.hash.substr(1);
-                if(share_hash == current_hash) return;
-                d3.json('../web/share/' + share_hash, function(share) {
-                    current_hash = share_hash;
-                    var b = d3.select('body');
-                    b.selectAll('*').remove();
-                    var h1 = b.append('h1');
-                        h1.append('a').attr('href', '.').text('P2Pool');
-                        h1.append('span').text(' > Share ');
-                        h1.append('a').attr('href', '#' + share_hash).text(share_hash.substr(-8));
-                    if(share == null) {
-                        b.append('p').text('share not found');
-                        return;
+            return str;
+        }
+
+        function target_to_difficulty(target) { return (0xffff0000 * Math.pow(2, 256-64) + 1)/(target + 1); }
+
+        var latest_hash = null;
+        var current_hash = null;
+        var shares_count = 0;
+
+        function showshare(currency_info) {
+            var share_hash = document.location.hash.substr(1);
+            if(share_hash == current_hash || share_hash == null || share_hash == "") return;
+            d3.json('../web/share/' + share_hash, function(share) {
+                current_hash = share_hash;
+                var b = d3.select('#share-box');
+                b.selectAll('*').remove();
+                var h1 = b.append('h1');
+                    h1.append('span').text('Share ');
+                    h1.append('a').attr('href', '#' + share_hash).text(share_hash.substr(-8));
+                if(share == null) {
+                    b.append('p').text('share not found');
+                    return;
+                }
+                var parent = b.append('p')
+                    parent.append('span').text('Parent: ');
+                    parent.append('a').attr('href', '#' + share.parent).text(share.parent.substr(-8));
+                var far_parent = b.append('p')
+                    far_parent.append('span').text('Far parent: ');
+                    far_parent.append('a').attr('href', '#' + share.far_parent).text(share.far_parent.substr(-8));
+                var children = b.append('p');
+                    children.append('span').text('Children: ');
+                    children.selectAll().data(share.children).enter().append('span').text(' ').append('a')
+                        .attr('href', function(c){return '#' + c})
+                        .text(function(c){return c.substr(-8)});
+                b.append('p').text('Type: ' + share.type_name);
+                b.append('h2').text('Local data');
+                b.append('p').text('Verified: ' + share.local.verified);
+                b.append('p').text('Time first seen: ' + new Date(1000*share.local.time_first_seen) + ' (' + share.local.time_first_seen + ')');
+                b.append('p').text('Peer first received from: ' + share.local.peer_first_received_from);
+                b.append('h2').text('Share data');
+                b.append('p').text('Timestamp: ' + new Date(1000*share.share_data.timestamp) + ' (' + share.share_data.timestamp + ')');
+                b.append('p').text('Difficulty: ' + target_to_difficulty(share.share_data.target));
+                b.append('p').text('Minimum difficulty: ' + target_to_difficulty(share.share_data.max_target));
+                b.append('p').text('Payout address: ').append('a').text(share.share_data.payout_address).attr('href', currency_info.address_explorer_url_prefix+share.share_data.payout_address);
+                b.append('p').text('Donation amount: ' + d3.format('.3p')(share.share_data.donation));
+                b.append('p').text('Last stale: ' + share.share_data.stale_info);
+                b.append('p').text('Nonce: ' + share.share_data.nonce);
+                b.append('p').text('Desired version: ' + share.share_data.desired_version);
+                b.append('p').text('Absolute height: ' + share.share_data.absheight);
+                b.append('p').text('Absolute work: ' + share.share_data.abswork);
+                b.append('h2').text('Block');
+                var block = b.append('p')
+                    block.append('span').text('Hash: ')
+                    block.append('a').attr('href', currency_info.block_explorer_url_prefix + share.block.hash).text(share.block.hash);
+                b.append('h3').text('Header');
+                b.append('p').text('Version (dec): ' + share.block.header.version);
+                b.append('p').text('Version (hex): ' + share.block.header.version.toString(16));
+                var prevblock = b.append('p')
+                    prevblock.append('span').text('Previous block: ');
+                    prevblock.append('a').attr('href', currency_info.block_explorer_url_prefix + share.block.header.previous_block).text(share.block.header.previous_block);
+                b.append('p').text('Merkle root: ' + share.block.header.merkle_root);
+                b.append('p').text('Timestamp: ' + new Date(1000*share.block.header.timestamp) + ' (' + share.block.header.timestamp + ')');
+                b.append('p').text('Difficulty: ' + target_to_difficulty(share.block.header.target));
+                b.append('p').text('Nonce: ' + share.block.header.nonce);
+                b.append('h3').text('Generation transaction');
+                b.append('p').text('Hash: ').append('a').text(share.block.gentx.hash).attr('href', currency_info.tx_explorer_url_prefix+share.block.gentx.hash);
+                b.append('p').text('Coinbase (hex): ' + share.block.gentx.coinbase);
+                b.append('p').text('Coinbase (text): ' + hex2a(share.block.gentx.coinbase));
+                b.append('p').text('Value: ' + share.block.gentx.value + ' ' + currency_info.symbol);
+                b.append('p').text('Last txout nonce (used by Stratum miners): ' + share.block.gentx.last_txout_nonce);
+                b.append('h3').text('Other transactions');
+                b.append('p').selectAll().data(share.block.other_transaction_hashes).enter().append('span').text(' ').append('a')
+                        .attr('href', function(tx_hash){return currency_info.tx_explorer_url_prefix + tx_hash})
+                        .text(function(tx_hash, i){return i+1});
+                return true;
+            });
+        }
+
+        function showinfo(currency_info) {
+            var share_hash = document.location.hash.substr(1);
+            if(share_hash == null || share_hash == "") {
+                d3.json('../web/best_share_hash', function(hash) {
+                    share_hash = hash.toString();
+                    if (share_hash != latest_hash) {
+                        var b = d3.select('#share-box');
+                        b.selectAll('*').remove();
+                        b.append('h1').text('Last 10 shares')
+                        var table = b.append('table');
+                        table.attr('class', 'table');
+                        var thead = table.append('thead');
+                        var headtr = thead.append('tr');
+                        headtr.append('th').text('Absolute height');
+                        headtr.append('th').text('Hash');
+                        headtr.append('th').text('Payout address');
+                        tbody = table.append('tbody');
+                        shares_count = 0;
+                        latest_hash = share_hash;
+                        addrow(tbody, share_hash, currency_info);
                     }
-                    var parent = b.append('p')
-                        parent.append('span').text('Parent: ');
-                        parent.append('a').attr('href', '#' + share.parent).text(share.parent.substr(-8));
-                    var children = b.append('p');
-                        children.append('span').text('Children: ');
-                        children.selectAll().data(share.children).enter().append('span').text(' ').append('a')
-                            .attr('href', function(c){return '#' + c})
-                            .text(function(c){return c.substr(-8)});
-                    b.append('p').text('Type: ' + share.type_name);
-                    b.append('h2').text('Local data');
-                    b.append('p').text('Verified: ' + share.local.verified);
-                    b.append('p').text('Time first seen: ' + new Date(1000*share.local.time_first_seen) + ' (' + share.local.time_first_seen + ')');
-                    b.append('p').text('Peer first received from: ' + share.local.peer_first_received_from);
-                    b.append('h2').text('Share data');
-                    b.append('p').text('Timestamp: ' + new Date(1000*share.share_data.timestamp) + ' (' + share.share_data.timestamp + ')');
-                    b.append('p').text('Difficulty: ' + target_to_difficulty(share.share_data.target));
-                    b.append('p').text('Minimum difficulty: ' + target_to_difficulty(share.share_data.max_target));
-                    b.append('p').text('Payout address: ').append('a').text(share.share_data.payout_address).attr('href', currency_info.address_explorer_url_prefix+share.share_data.payout_address);
-                    b.append('p').text('Donation amount: ' + d3.format('.3p')(share.share_data.donation));
-                    b.append('p').text('Last stale: ' + share.share_data.stale_info);
-                    b.append('p').text('Nonce: ' + share.share_data.nonce);
-                    b.append('p').text('Desired version: ' + share.share_data.desired_version);
-                    b.append('p').text('Absolute height: ' + share.share_data.absheight);
-                    b.append('p').text('Absolute work: ' + share.share_data.abswork);
-                    b.append('h2').text('Block');
-                    var block = b.append('p')
-                        block.append('span').text('Hash: ')
-                        block.append('a').attr('href', currency_info.block_explorer_url_prefix + share.block.hash).text(share.block.hash);
-                    b.append('h3').text('Header');
-                    b.append('p').text('Version: ' + share.block.header.version);
-                    var prevblock = b.append('p')
-                        prevblock.append('span').text('Previous block: ');
-                        prevblock.append('a').attr('href', currency_info.block_explorer_url_prefix + share.block.header.previous_block).text(share.block.header.previous_block);
-                    b.append('p').text('Merkle root: ' + share.block.header.merkle_root);
-                    b.append('p').text('Timestamp: ' + new Date(1000*share.block.header.timestamp) + ' (' + share.block.header.timestamp + ')');
-                    b.append('p').text('Difficulty: ' + target_to_difficulty(share.block.header.target));
-                    b.append('p').text('Nonce: ' + share.block.header.nonce);
-                    b.append('h3').text('Generation transaction');
-                    b.append('p').text('Hash: ').append('a').text(share.block.gentx.hash).attr('href', currency_info.tx_explorer_url_prefix+share.block.gentx.hash);
-                    b.append('p').text('Coinbase (hex): ' + share.block.gentx.coinbase);
-                    b.append('p').text('Coinbase (text): ' + hex2a(share.block.gentx.coinbase));
-                    b.append('p').text('Value: ' + share.block.gentx.value + ' ' + currency_info.symbol);
-                    b.append('p').text('Last txout nonce (used by Stratum miners): ' + share.block.gentx.last_txout_nonce);
-                    b.append('h3').text('Other transactions');
-                    b.append('p').selectAll().data(share.block.other_transaction_hashes).enter().append('span').text(' ').append('a')
-                            .attr('href', function(tx_hash){return currency_info.tx_explorer_url_prefix + tx_hash})
-                            .text(function(tx_hash, i){return i+1});
-                    return true;
                 });
             }
-            
-            d3.json('../web/currency_info', function(currency_info) {
-                reload(currency_info);
-                setInterval(function(){ reload(currency_info) }, 100);
+        }
+
+        function addrow(tbody, share_hash, currency_info) {
+            shares_count++;
+            if (share_hash == null || shares_count > 10) return;
+            d3.json('../web/share/' + share_hash, function(share) {
+                if (share == null) return;
+                tr = tbody.append('tr');
+                tr.append('td').text(share.share_data.absheight);
+                tr.append('td').append('a').text(share.block.hash).attr('href', '#' + share.block.hash);
+                tr.append('td').append('a').text(share.share_data.payout_address).attr('href', currency_info.address_explorer_url_prefix+share.share_data.payout_address);
+                share_hash = share.parent;
+                addrow(tbody, share_hash, currency_info);
             });
-        </script>
-    </body>
+        }
+
+        d3.json('../web/currency_info', function(currency_info) {
+            d3.selectAll('.symbol').text(currency_info.symbol);
+            showshare(currency_info);
+            showinfo(currency_info)
+            setInterval(function(){ showshare(currency_info) }, 100);
+            setInterval(function(){ showinfo(currency_info) }, 15000);
+        });
+    </script>
+</body>
 </html>
