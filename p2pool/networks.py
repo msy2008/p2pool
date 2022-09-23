@@ -10,7 +10,7 @@ from p2pool.util import math
 nets = dict(
     infinitecoin=math.Object(
         PARENT=networks.nets['infinitecoin'],
-        SHARE_PERIOD=15, # seconds
+        SHARE_PERIOD=10, # seconds
         CHAIN_LENGTH=24*60*60//10, # shares
         REAL_CHAIN_LENGTH=24*60*60//10, # shares
         TARGET_LOOKBEHIND=200, # shares
